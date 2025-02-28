@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users List</title>
+</head>
+<body>
+    <h1>User list:</h1>
+    <ul>
+        {% for user in users %}
+            <li>{{ user.id }} - {{ user.name }}</li>
+            <a href="{{ url_for('edit_user', id=user.id) }}"> Edit</a>
+            <a href="{{ url_for('delete_user', id=user.id) }}" onclick="return confirm('sure?')"> Delete</a>
+        {% endfor %}
+    </ul>
+    <br>
+    <a href="{{ url_for('add_user') }}"> Add new user</a>
+
+</body>
+</html>
