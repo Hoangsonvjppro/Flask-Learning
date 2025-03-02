@@ -9,7 +9,7 @@ import os
 
 # Khởi tạo Flask
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -129,8 +129,8 @@ def update_profile():
 @login_required
 @admin_required
 def admin_dashboard():
-    return ('<h1> Welcome Admin! </h1>'
-            '<p>Only admins can see this page</p>')
+    users = User.query.all()
+    return render_template('admin.html', users=users)
 
 @app.route('/logout')
 @login_required
