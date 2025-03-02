@@ -2,7 +2,9 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import os
+
 
 # Khởi tạo Flask
 app = Flask(__name__)
@@ -17,11 +19,14 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+
 # Định nghĩa model User
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+    avatar = db.Column(db.String(200), nullable=True, default="default.jpg")  # Thêm ảnh đại diện
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -38,17 +43,23 @@ def load_user(user_id):
 def home():
     return render_template('home.html', current_user=current_user)
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
+        email = request.form['email']  # Thêm email
         password = request.form['password']
 
         if User.query.filter_by(username=username).first():
             flash("Username already exists!", "danger")
             return redirect(url_for('register'))
 
-        new_user = User(username=username)
+        if User.query.filter_by(email=email).first():  # Kiểm tra email trùng
+            flash("Email already registered!", "danger")
+            return redirect(url_for('register'))
+
+        new_user = User(username=username, email=email)  # Lưu email
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -74,6 +85,34 @@ def login():
 
     return render_template('login.html')
 
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/update-profile', methods=['GET', 'POST'])
+@login_required
+def update_profile():
+    if request.method == 'POST':
+        new_username = request.form['username']
+        new_password = request.form['password']
+        avatar = request.files['avatar']
+
+        if new_username:
+            current_user.username = new_username
+
+        if new_password:
+            current_user.set_password(new_password)
+
+        if avatar:
+            filename = secure_filename(avatar.filename)
+            avatar.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            current_user.avatar = filename
+
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('update_profile'))
+
+    return render_template('update_profile.html')
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -82,6 +121,7 @@ def logout():
     return redirect(url_for('home'))
 
 if __name__ == '__main__':
+    app.debug = True
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run()

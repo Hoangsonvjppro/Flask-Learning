@@ -17,6 +17,10 @@
 
 {% if current_user.is_authenticated %}
     <p>Hello, {{ current_user.username }}! You are logged in.</p>
+    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" alt="Avatar" width="100">
+    <br>
+    <a href="{{ url_for('update_profile') }}">Update Profile</a>
+    <br>
     <a href="{{ url_for('logout') }}">Logout</a>
 {% else %}
     <a href="{{ url_for('login') }}">Login</a>
