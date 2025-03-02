@@ -6,25 +6,28 @@
     <title>Home</title>
 </head>
 <body>
-<h1>Welcome to the Home Page</h1>
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <p style="color: {{ 'red' if category == 'danger' else 'green' }}">{{ message }}</p>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+    <h1>Welcome to the Home Page</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p style="color: {{ 'red' if category == 'danger' else 'green' }}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-{% if current_user.is_authenticated %}
-    <p>Hello, {{ current_user.username }}! You are logged in.</p>
-    <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" alt="Avatar" width="100">
-    <br>
-    <a href="{{ url_for('update_profile') }}">Update Profile</a>
-    <br>
-    <a href="{{ url_for('logout') }}">Logout</a>
-{% else %}
-    <a href="{{ url_for('login') }}">Login</a>
-    <a href="{{ url_for('register') }}">Register</a>
-{% endif %}
+        {% if current_user.is_authenticated %}
+            <p>Hello, {{ current_user.username }}! You are logged in.{{ current_user.role }}</p>
+            {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_dashboard') }}">Go to Admin Panel</a>
+            {% endif %}
+            <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" alt="Avatar" width="100">
+            <br>
+            <a href="{{ url_for('update_profile') }}">Update Profile</a>
+            <br>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
 </body>
 </html>

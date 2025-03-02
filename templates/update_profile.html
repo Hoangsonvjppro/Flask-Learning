@@ -28,6 +28,9 @@
     <button type="submit">Update Profile</button>
 </form>
 
+<br>
+<a href="{{ url_for('home') }}">Back to home page</a>
+
 <h3>Current Avatar:</h3>
 <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" alt="Avatar" width="150">
 </body>

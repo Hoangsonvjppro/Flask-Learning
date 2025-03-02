@@ -1,15 +1,17 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from functools import wraps
 import os
 
 
 # Khởi tạo Flask
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 app.config['SECRET_KEY'] = 'your_secret_key'
 
 # Khởi tạo database
@@ -27,12 +29,21 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     avatar = db.Column(db.String(200), nullable=True, default="default.jpg")  # Thêm ảnh đại diện
+    role = db.Column(db.String(50), nullable=False, default="user")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.role == "admin":
+            abort(403) #return 403 error Forbidden if !=admin
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Load user cho Flask-Login
 @login_manager.user_loader
@@ -50,6 +61,7 @@ def register():
         username = request.form['username']
         email = request.form['email']  # Thêm email
         password = request.form['password']
+        role = request.form['role']
 
         if User.query.filter_by(username=username).first():
             flash("Username already exists!", "danger")
@@ -59,7 +71,7 @@ def register():
             flash("Email already registered!", "danger")
             return redirect(url_for('register'))
 
-        new_user = User(username=username, email=email)  # Lưu email
+        new_user = User(username=username, email=email, role=role)  # Lưu email
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -112,6 +124,13 @@ def update_profile():
         return redirect(url_for('update_profile'))
 
     return render_template('update_profile.html')
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    return ('<h1> Welcome Admin! </h1>'
+            '<p>Only admins can see this page</p>')
 
 @app.route('/logout')
 @login_required
